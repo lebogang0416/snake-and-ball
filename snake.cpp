@@ -8,6 +8,7 @@
 using namespace std;
 
 bool gameOver;
+bool paused = false; // Variable to track the paused state
 const int width = 20;
 const int height = 20;
 int x, y, ballX, ballY, score;
@@ -21,6 +22,7 @@ eDirection dir;
 
 void Setup() {
     gameOver = false;
+    paused = false; // Initially the game is not paused
     dir = STOP;
     x = width / 2;
     y = height / 2;
@@ -96,6 +98,11 @@ void Draw() {
 
     // Display score, level, and lives
     cout << "Score: " << score << " | Level: " << level << " | Lives: " << lives << endl;
+
+    // Display pause message if paused
+    if (paused) {
+        cout << "Game Paused. Press 'p' to resume." << endl;
+    }
 }
 
 void Input() {
@@ -113,6 +120,9 @@ void Input() {
             case 's':
                 dir = DOWN;
                 break;
+            case 'p':
+                paused = !paused; // Toggle pause on 'p' key press
+                break;
             case 'x':
                 gameOver = true;
                 break;
@@ -121,6 +131,11 @@ void Input() {
 }
 
 void Logic() {
+    // If the game is paused, stop updating the snake's position
+    if (paused) {
+        return; // Skip the game logic when paused
+    }
+
     // Save the previous position of the head
     int prevX = tailX[0];
     int prevY = tailY[0];
@@ -139,86 +154,3 @@ void Logic() {
     }
 
     // Move the snake head
-    switch (dir) {
-        case LEFT:
-            x--;
-            break;
-        case RIGHT:
-            x++;
-            break;
-        case UP:
-            y--;
-            break;
-        case DOWN:
-            y++;
-            break;
-        default:
-            break;
-    }
-
-    // Check for collision with walls
-    if (x >= width || x < 0 || y >= height || y < 0) {
-        lives--; // Lose a life
-        if (lives > 0) {
-            ResetPosition();
-        } else {
-            gameOver = true;
-        }
-    }
-
-    // If snake eats the ball
-    if (x == ballX && y == ballY) {
-        score += 10;
-        ballX = rand() % width;
-        ballY = rand() % height;
-        nTail++; // Increase the length of the tail
-
-        // Level-up every 50 points
-        if (score % 50 == 0) {
-            level++;
-            // Add obstacles for each new level
-            for (int i = 0; i < level; i++) {
-                int obsX = rand() % width;
-                int obsY = rand() % height;
-                obstacles.push_back(make_pair(obsX, obsY));
-            }
-        }
-    }
-
-    // Check if snake hits itself
-    for (int i = 0; i < nTail; i++) {
-        if (tailX[i] == x && tailY[i] == y) {
-            lives--; // Lose a life
-            if (lives > 0) {
-                ResetPosition();
-            } else {
-                gameOver = true;
-            }
-        }
-    }
-
-    // Check if snake hits an obstacle
-    for (auto &obstacle : obstacles) {
-        if (obstacle.first == x && obstacle.second == y) {
-            lives--; // Lose a life
-            if (lives > 0) {
-                ResetPosition();
-            } else {
-                gameOver = true;
-            }
-        }
-    }
-}
-
-int main() {
-    srand(time(0)); // Seed the random number generator
-    Setup();
-    while (!gameOver) {
-        Draw();
-        Input();
-        Logic();
-        // Speed increases with level
-        Sleep(200 - (level * 20)); 
-    }
-    return 0;
-}
