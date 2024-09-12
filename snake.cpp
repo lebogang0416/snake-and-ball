@@ -4,25 +4,45 @@
 #include <cstdlib>   // For rand() and srand()
 #include <ctime>     // For seeding random numbers
 #include <vector>
+#include <fstream>   // For file handling (read/write high score)
 
 using namespace std;
 
 bool gameOver;
-bool paused = false; // Variable to track the paused state
 const int width = 20;
 const int height = 20;
-int x, y, ballX, ballY, score;
+int x, y, ballX, ballY, score, highScore;
 int tailX[100], tailY[100];
 int nTail;
 int level = 1;
 int lives = 3;
+bool paused = false;
 vector<pair<int, int>> obstacles;
 enum eDirection { STOP = 0, LEFT, RIGHT, UP, DOWN };
 eDirection dir;
 
+// Function to load the high score from a file
+void LoadHighScore() {
+    ifstream file("highscore.txt");
+    if (file.is_open()) {
+        file >> highScore;
+        file.close();
+    } else {
+        highScore = 0; // Set to 0 if the file doesn't exist
+    }
+}
+
+// Function to save the high score to a file
+void SaveHighScore() {
+    ofstream file("highscore.txt");
+    if (file.is_open()) {
+        file << highScore;
+        file.close();
+    }
+}
+
 void Setup() {
     gameOver = false;
-    paused = false; // Initially the game is not paused
     dir = STOP;
     x = width / 2;
     y = height / 2;
@@ -31,8 +51,10 @@ void Setup() {
     score = 0;
     nTail = 0;
     level = 1;
+    lives = 3;
+    paused = false;
     obstacles.clear();
-    lives = 3; // Player starts with 3 lives
+    LoadHighScore(); // Load the high score when the game starts
 }
 
 void ResetPosition() {
@@ -45,6 +67,11 @@ void ResetPosition() {
 
 void Draw() {
     system("cls"); // Clears the screen
+    
+    if (paused) {
+        cout << "Game Paused. Press 'p' to resume.\n";
+        return; // Don't draw the game if paused
+    }
     
     // Top wall
     for (int i = 0; i < width + 2; i++)
@@ -96,44 +123,46 @@ void Draw() {
         cout << "#";
     cout << endl;
 
-    // Display score, level, and lives
-    cout << "Score: " << score << " | Level: " << level << " | Lives: " << lives << endl;
-
-    // Display pause message if paused
-    if (paused) {
-        cout << "Game Paused. Press 'p' to resume." << endl;
-    }
+    // Display score, level, lives, and high score
+    cout << "Score: " << score << " | Level: " << level << " | Lives: " << lives << " | High Score: " << highScore << endl;
 }
 
 void Input() {
     if (_kbhit()) {
-        switch (_getch()) {
-            case 'a':
-                dir = LEFT;
-                break;
-            case 'd':
-                dir = RIGHT;
-                break;
-            case 'w':
-                dir = UP;
-                break;
-            case 's':
-                dir = DOWN;
-                break;
-            case 'p':
-                paused = !paused; // Toggle pause on 'p' key press
-                break;
-            case 'x':
-                gameOver = true;
-                break;
+        char key = _getch();
+        
+        // Toggle pause
+        if (key == 'p') {
+            paused = !paused;
+        }
+
+        // Only process movement if not paused
+        if (!paused) {
+            switch (key) {
+                case 'a':
+                    dir = LEFT;
+                    break;
+                case 'd':
+                    dir = RIGHT;
+                    break;
+                case 'w':
+                    dir = UP;
+                    break;
+                case 's':
+                    dir = DOWN;
+                    break;
+                case 'x':
+                    gameOver = true;
+                    break;
+            }
         }
     }
 }
 
 void Logic() {
-    // If the game is paused, stop updating the snake's position
+    // If the game is paused, skip the logic update
     if (paused) {
-        return; // Skip the game logic when paused
+        return;
     }
 
     // Save the previous position of the head
@@ -154,3 +183,22 @@ void Logic() {
     }
 
     // Move the snake head
+    switch (dir) {
+        case LEFT:
+            x--;
+            break;
+        case RIGHT:
+            x++;
+            break;
+        case UP:
+            y--;
+            break;
+        case DOWN:
+            y++;
+            break;
+        default:
+            break;
+    }
+
+    // Check for collision with walls
+    if (x >= width || x < 0 || y >= heig
